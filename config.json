@@ -9,6 +9,7 @@
   ],
   "allowCustomHomeservers": true,
   "elementCallUrl": null,
+  "elementCallParams": {},
 
   "featuredCommunities": {
     "openAsDefault": false,

@@ -29,6 +29,38 @@ import {
 import { CinnyWidget } from './CinnyWidget';
 import { SmallWidgetDriver } from './SmallWidgetDriver';
 
+type ElementCallParamValue = string | number | boolean;
+type ElementCallParams = Record<string, ElementCallParamValue>;
+type WidgetUrlOptions = {
+  skipLobby?: string;
+  returnToLobby?: string;
+  perParticipantE2EE?: string;
+  theme?: string | null;
+  customParams?: ElementCallParams;
+};
+
+const PROTECTED_WIDGET_PARAMS = new Set([
+  'embed',
+  'widgetId',
+  'appPrompt',
+  'header',
+  'confineToRoom',
+  'userId',
+  'deviceId',
+  'roomId',
+  'baseUrl',
+  'parentUrl',
+]);
+
+const appendCustomParams = (params: URLSearchParams, customParams?: ElementCallParams): void => {
+  if (!customParams) return;
+
+  Object.entries(customParams).forEach(([key, value]) => {
+    if (PROTECTED_WIDGET_PARAMS.has(key)) return;
+    params.set(key, String(value));
+  });
+};
+
 /**
  * Generates the URL for the Element Call widget.
  * @param mx - The MatrixClient instance.
@@ -40,7 +72,7 @@ export const getWidgetUrl = (
   roomId: string,
   elementCallUrl: string,
   widgetId: string,
-  setParams: any
+  options: WidgetUrlOptions
 ): URL => {
   const baseUrl = window.location.origin;
   const url = elementCallUrl
@@ -51,18 +83,19 @@ export const getWidgetUrl = (
     embed: 'true',
     widgetId,
     appPrompt: 'false',
-    skipLobby: setParams.skipLobby ?? 'true', // TODO: skipLobby is deprecated, use intent instead (intent doesn't produce the same effect?)
-    returnToLobby: setParams.returnToLobby ?? 'true',
-    perParticipantE2EE: setParams.perParticipantE2EE ?? 'true',
+    skipLobby: options.skipLobby ?? 'true', // TODO: skipLobby is deprecated, use intent instead (intent doesn't produce the same effect?)
+    returnToLobby: options.returnToLobby ?? 'true',
+    perParticipantE2EE: options.perParticipantE2EE ?? 'true',
     header: 'none',
     confineToRoom: 'true',
-    theme: setParams.theme ?? 'dark',
+    theme: options.theme ?? 'dark',
     userId: mx.getUserId()!,
     deviceId: mx.getDeviceId()!,
     roomId,
     baseUrl: mx.baseUrl!,
     parentUrl: window.location.origin,
   });
+  appendCustomParams(params, options.customParams);
 
   const replacedParams = params.toString().replace(/%24/g, '$');
   url.search = `?${replacedParams}`;

@@ -12,6 +12,8 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useClientConfig } from '../../../hooks/useClientConfig';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { ThemeKind, useTheme } from '../../../hooks/useTheme';
+import { useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
 
 interface PersistentCallContainerProps {
   children: ReactNode;
@@ -37,7 +39,33 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   const clientConfig = useClientConfig();
   const screenSize = useScreenSizeContext();
   const theme = useTheme();
+  const [callMicNoiseGate] = useSetting(settingsAtom, 'callMicNoiseGate');
+  const [callMicNoiseGateThresholdDb] = useSetting(settingsAtom, 'callMicNoiseGateThresholdDb');
+  const [callParticipantVolumeBoost] = useSetting(settingsAtom, 'callParticipantVolumeBoost');
   const isMobile = screenSize === ScreenSize.Mobile;
+
+  const callParams = useMemo(() => {
+    const params: Record<string, string | number | boolean> = {};
+
+    if (callMicNoiseGate) {
+      params.audioInputNoiseGate = true;
+      params.audioInputNoiseGateThresholdDb = callMicNoiseGateThresholdDb;
+    }
+
+    if (callParticipantVolumeBoost > 100) {
+      params.maxParticipantVolumePercent = callParticipantVolumeBoost;
+    }
+
+    return {
+      ...(clientConfig.elementCallParams ?? {}),
+      ...params,
+    };
+  }, [
+    clientConfig.elementCallParams,
+    callMicNoiseGate,
+    callMicNoiseGateThresholdDb,
+    callParticipantVolumeBoost,
+  ]);
 
   /* eslint-disable no-param-reassign */
 
@@ -64,6 +92,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
               returnToLobby: 'true',
               perParticipantE2EE: 'true',
               theme: themeKind,
+              customParams: callParams,
             }
           );
 
@@ -119,8 +148,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
       activeCallRoomId,
       isActiveCallReady,
       clientConfig.elementCallUrl,
-      activeClientWidget,
+      callParams,
       registerActiveClientWidgetApi,
+      activeClientWidget,
     ]
   );
 

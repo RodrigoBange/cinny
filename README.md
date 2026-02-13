@@ -27,6 +27,7 @@ You can also download our desktop app from the [cinny-desktop repository](https:
 To host Cinny on your own, simply download the tarball from [GitHub releases](https://github.com/cinnyapp/cinny/releases/latest), and serve the files from `dist/` using your preferred webserver. Alternatively, you can just pull the docker image from [DockerHub](https://hub.docker.com/r/ajbura/cinny) or [GitHub Container Registry](https://github.com/cinnyapp/cinny/pkgs/container/cinny).
 
 * The default homeservers and explore pages are defined in [`config.json`](config.json).
+    * Voice calls are provided by an embedded Element Call instance. Use `elementCallUrl` to point to your deployment and `elementCallParams` to pass additional Element Call URL query parameters.
 
 * You need to set up redirects to serve the assests. Example configurations; [netlify](netlify.toml), [nginx](contrib/nginx/cinny.domain.tld.conf), [caddy](contrib/caddy/caddyfile).
     * If you have trouble configuring redirects you can [enable hash routing](config.json#L35) — the url in the browser will have a `/#/` between the domain and open channel (ie. `app.cinny.in/#/home/` instead of `app.cinny.in/home/`) but you won't have to configure your webserver.

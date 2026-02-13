@@ -10,6 +10,7 @@ export type ClientConfig = {
   homeserverList?: string[];
   allowCustomHomeservers?: boolean;
   elementCallUrl?: string;
+  elementCallParams?: Record<string, string | number | boolean>;
 
   featuredCommunities?: {
     openAsDefault?: boolean;

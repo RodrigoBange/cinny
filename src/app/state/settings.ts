@@ -37,6 +37,10 @@ export interface Settings {
   showNotifications: boolean;
   isNotificationSounds: boolean;
 
+  callMicNoiseGate: boolean;
+  callMicNoiseGateThresholdDb: number;
+  callParticipantVolumeBoost: number;
+
   hour24Clock: boolean;
   dateFormatString: string;
 
@@ -70,6 +74,10 @@ const defaultSettings: Settings = {
 
   showNotifications: true,
   isNotificationSounds: true,
+
+  callMicNoiseGate: false,
+  callMicNoiseGateThresholdDb: -60,
+  callParticipantVolumeBoost: 100,
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',
