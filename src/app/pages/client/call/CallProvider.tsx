@@ -87,6 +87,17 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
 
+  const getIframeDocument = useCallback((iframe: HTMLIFrameElement | null): Document | null => {
+    if (!iframe) return null;
+
+    try {
+      return iframe.contentWindow?.document ?? iframe.contentDocument ?? null;
+    } catch {
+      // Cross-origin iframe document access is blocked by the browser.
+      return null;
+    }
+  }, []);
+
   const setActiveCallRoomId = useCallback((roomId: string | null) => {
     setActiveCallRoomIdState(roomId);
   }, []);
@@ -191,11 +202,11 @@ export function CallProvider({ children }: CallProviderProps) {
 
   useEffect(() => {
     if (!activeCallRoomId && !viewedCallRoomId) {
-      return;
+      return undefined;
     }
 
     if (!activeClientWidgetApi) {
-      return;
+      return undefined;
     }
 
     const handleHangup = (ev: CustomEvent) => {
@@ -237,9 +248,7 @@ export function CallProvider({ children }: CallProviderProps) {
 
       activeClientWidgetApi.transport.reply(ev.detail, {});
 
-      const iframeDoc =
-        activeClientWidgetIframeRef?.contentWindow?.document ||
-        activeClientWidgetIframeRef?.contentDocument;
+      const iframeDoc = getIframeDocument(activeClientWidgetIframeRef);
 
       if (iframeDoc) {
         const observer = new MutationObserver(() => {
@@ -257,7 +266,7 @@ export function CallProvider({ children }: CallProviderProps) {
       setIsActiveCallReady(true);
     };
 
-    void sendWidgetAction(WIDGET_MEDIA_STATE_UPDATE_ACTION, {
+    sendWidgetAction(WIDGET_MEDIA_STATE_UPDATE_ACTION, {
       audio_enabled: isAudioEnabled,
       video_enabled: isVideoEnabled,
     }).catch(() => {
@@ -269,7 +278,19 @@ export function CallProvider({ children }: CallProviderProps) {
     activeClientWidgetApi.on(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
     activeClientWidgetApi.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
     activeClientWidgetApi.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
+
+    return () => {
+      activeClientWidgetApi.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
+      activeClientWidgetApi.off(
+        `action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`,
+        handleMediaStateUpdate
+      );
+      activeClientWidgetApi.off(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
+      activeClientWidgetApi.off(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
+      activeClientWidgetApi.off(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
+    };
   }, [
+    getIframeDocument,
     activeClientWidgetIframeRef,
     activeClientWidgetApi,
     activeCallRoomId,
@@ -282,8 +303,6 @@ export function CallProvider({ children }: CallProviderProps) {
     viewedRoomId,
     viewedCallRoomId,
     setViewedCallRoomId,
-    activeClientWidget?.iframe?.contentDocument,
-    activeClientWidget?.iframe?.contentWindow?.document,
     sendWidgetAction,
   ]);
 

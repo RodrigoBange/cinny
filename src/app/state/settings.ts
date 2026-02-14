@@ -75,9 +75,9 @@ const defaultSettings: Settings = {
   showNotifications: true,
   isNotificationSounds: true,
 
-  callMicNoiseGate: false,
-  callMicNoiseGateThresholdDb: -60,
-  callParticipantVolumeBoost: 100,
+  callMicNoiseGate: true,
+  callMicNoiseGateThresholdDb: -45,
+  callParticipantVolumeBoost: 200,
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',

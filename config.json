@@ -8,7 +8,7 @@
     "xmr.se"
   ],
   "allowCustomHomeservers": true,
-  "elementCallUrl": null,
+  "elementCallUrl": "https://ele-call-dev.stabilissoft.com",
   "elementCallParams": {},
 
   "featuredCommunities": {
