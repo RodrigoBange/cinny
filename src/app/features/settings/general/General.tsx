@@ -988,10 +988,6 @@ export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps
     settingsAtom,
     'callMicNoiseGateThresholdDb'
   );
-  const [callParticipantVolumeBoost, setCallParticipantVolumeBoost] = useSetting(
-    settingsAtom,
-    'callParticipantVolumeBoost'
-  );
   const [micPreviewEnabled, setMicPreviewEnabled] = useState(false);
   const [micPreviewDb, setMicPreviewDb] = useState(-100);
   const [micPreviewError, setMicPreviewError] = useState('');
@@ -1092,60 +1088,53 @@ export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps
   const handleNoiseGateThresholdChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
     const threshold = Number(evt.currentTarget.value);
     if (Number.isNaN(threshold)) return;
-    setCallMicNoiseGateThresholdDb(Math.max(-80, Math.min(0, threshold)));
+    setCallMicNoiseGateThresholdDb(Math.max(-100, Math.min(0, threshold)));
+  };
+  const gateBarRef = useRef<HTMLDivElement | null>(null);
+  const thresholdToPercent = (thresholdDb: number): number =>
+    Math.max(0, Math.min(100, ((thresholdDb + 100) / 100) * 100));
+
+  const setThresholdFromClientX = (clientX: number) => {
+    const bar = gateBarRef.current;
+    if (!bar) return;
+    const rect = bar.getBoundingClientRect();
+    const ratio = (clientX - rect.left) / rect.width;
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const threshold = Math.round(clampedRatio * 100 - 100);
+    setCallMicNoiseGateThresholdDb(threshold);
   };
 
-  const handleParticipantBoostChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
-    const boost = Number(evt.currentTarget.value);
-    if (Number.isNaN(boost)) return;
-    setCallParticipantVolumeBoost(Math.max(100, Math.min(300, boost)));
+  const handleGateBarMouseDown: MouseEventHandler<HTMLDivElement> = (evt) => {
+    evt.preventDefault();
+    setThresholdFromClientX(evt.clientX);
+
+    const onMove = (moveEvt: globalThis.MouseEvent) => {
+      setThresholdFromClientX(moveEvt.clientX);
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
   return (
     <Box direction="Column" gap="100">
       {showHeading && <Text size="L400">Voice Calls</Text>}
+      <Text size="L400">Noise Gate</Text>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Mic Noise Gate (Experimental)"
-          description="Passes noise-gate URL params to Element Call. Requires a compatible Element Call deployment."
+          description="Cuts out quiet background sounds and only lets your voice through when it's loud enough."
           after={<Switch variant="Primary" value={callMicNoiseGate} onChange={setCallMicNoiseGate} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Noise Gate Threshold (dB)"
-          description="Higher values (closer to 0) are stricter. Typical values are between -50 and -35."
-          after={
-            <Box direction="Column" gap="100" alignItems="End">
-              <Input
-                style={{ width: toRem(100) }}
-                size="300"
-                variant="Secondary"
-                radii="300"
-                type="number"
-                min="-80"
-                max="0"
-                value={`${callMicNoiseGateThresholdDb}`}
-                onChange={handleNoiseGateThresholdChange}
-                outlined
-              />
-              <input
-                type="range"
-                min="-80"
-                max="0"
-                step="1"
-                value={callMicNoiseGateThresholdDb}
-                onChange={handleNoiseGateThresholdChange}
-                style={{ width: toRem(180) }}
-              />
-            </Box>
-          }
-        />
-      </SequenceCard>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Mic Level Preview"
-          description="Live input level with threshold marker. This is only a visual preview."
+          description="Drag the marker on the bar or type a number. Move it right to require a louder voice to be heard."
           after={
             <Box direction="Column" gap="100" alignItems="End">
               <Button
@@ -1156,13 +1145,28 @@ export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps
               >
                 <Text size="B300">{micPreviewEnabled ? 'Stop Preview' : 'Start Preview'}</Text>
               </Button>
+              <Input
+                style={{ width: toRem(100) }}
+                size="300"
+                variant="Secondary"
+                radii="300"
+                type="number"
+                min="-100"
+                max="0"
+                value={`${callMicNoiseGateThresholdDb}`}
+                onChange={handleNoiseGateThresholdChange}
+                outlined
+              />
               <Box
+                ref={gateBarRef}
+                onMouseDown={handleGateBarMouseDown}
                 style={{
                   width: toRem(220),
                   position: 'relative',
                   height: toRem(12),
                   borderRadius: toRem(8),
                   overflow: 'hidden',
+                  cursor: 'ew-resize',
                   boxShadow: 'inset 0 0 0 1px rgba(127, 127, 127, 0.35)',
                   background:
                     'linear-gradient(90deg, rgba(201, 47, 47, 0.28) 0%, rgba(232, 173, 52, 0.25) 50%, rgba(58, 156, 71, 0.28) 100%)',
@@ -1178,14 +1182,13 @@ export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps
                 <div
                   style={{
                     position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    width: toRem(2),
-                    left: `calc(${Math.max(
-                      0,
-                      Math.min(100, ((callMicNoiseGateThresholdDb + 100) / 100) * 100)
-                    )}% - ${toRem(1)})`,
-                    background: 'rgba(22, 22, 22, 0.9)',
+                    top: toRem(-2),
+                    bottom: toRem(-2),
+                    width: toRem(4),
+                    borderRadius: toRem(999),
+                    left: `calc(${thresholdToPercent(callMicNoiseGateThresholdDb)}% - ${toRem(2)})`,
+                    background: 'rgba(15, 15, 15, 0.95)',
+                    boxShadow: '0 0 0 1px rgba(255,255,255,0.65), 0 1px 6px rgba(0,0,0,0.35)',
                   }}
                 />
               </Box>
@@ -1194,31 +1197,10 @@ export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps
               </Text>
               {micPreviewError !== '' && (
                 <Text size="T200" style={{ maxWidth: toRem(260) }} priority="300">
-                  {micPreviewError}
+                  Couldn't start mic preview: {micPreviewError}
                 </Text>
               )}
             </Box>
-          }
-        />
-      </SequenceCard>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Participant Volume Boost"
-          description="Sets requested remote volume cap from 100% to 300% for compatible Element Call deployments."
-          after={
-            <Input
-              style={{ width: toRem(100) }}
-              size="300"
-              variant="Secondary"
-              radii="300"
-              type="number"
-              min="100"
-              max="300"
-              value={`${callParticipantVolumeBoost}`}
-              onChange={handleParticipantBoostChange}
-              after={<Text size="T300">%</Text>}
-              outlined
-            />
           }
         />
       </SequenceCard>
