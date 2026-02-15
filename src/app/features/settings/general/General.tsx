@@ -979,7 +979,10 @@ function Messages() {
   );
 }
 
-function VoiceCalls() {
+type VoiceCallsSectionProps = {
+  showHeading?: boolean;
+};
+export function VoiceCallsSection({ showHeading = true }: VoiceCallsSectionProps) {
   const [callMicNoiseGate, setCallMicNoiseGate] = useSetting(settingsAtom, 'callMicNoiseGate');
   const [callMicNoiseGateThresholdDb, setCallMicNoiseGateThresholdDb] = useSetting(
     settingsAtom,
@@ -1095,12 +1098,12 @@ function VoiceCalls() {
   const handleParticipantBoostChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
     const boost = Number(evt.currentTarget.value);
     if (Number.isNaN(boost)) return;
-    setCallParticipantVolumeBoost(Math.max(100, Math.min(200, boost)));
+    setCallParticipantVolumeBoost(Math.max(100, Math.min(300, boost)));
   };
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Voice Calls</Text>
+      {showHeading && <Text size="L400">Voice Calls</Text>}
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Mic Noise Gate (Experimental)"
@@ -1201,7 +1204,7 @@ function VoiceCalls() {
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Participant Volume Boost"
-          description="Sets requested remote volume cap from 100% to 200% for compatible Element Call deployments."
+          description="Sets requested remote volume cap from 100% to 300% for compatible Element Call deployments."
           after={
             <Input
               style={{ width: toRem(100) }}
@@ -1210,7 +1213,7 @@ function VoiceCalls() {
               radii="300"
               type="number"
               min="100"
-              max="200"
+              max="300"
               value={`${callParticipantVolumeBoost}`}
               onChange={handleParticipantBoostChange}
               after={<Text size="T300">%</Text>}
@@ -1251,7 +1254,6 @@ export function General({ requestClose }: GeneralProps) {
               <DateAndTime />
               <Editor />
               <Messages />
-              <VoiceCalls />
             </Box>
           </PageContent>
         </Scroll>

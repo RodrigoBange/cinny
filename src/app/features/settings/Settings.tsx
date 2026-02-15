@@ -28,6 +28,7 @@ import { nameInitials } from '../../utils/common';
 import { Notifications } from './notifications';
 import { Devices } from './devices';
 import { EmojisStickers } from './emojis-stickers';
+import { VoiceCalls } from './voice-calls';
 import { DeveloperTools } from './developer-tools';
 import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -38,6 +39,7 @@ export enum SettingsPages {
   GeneralPage,
   AccountPage,
   NotificationPage,
+  VoiceCallsPage,
   DevicesPage,
   EmojisStickersPage,
   DeveloperToolsPage,
@@ -67,6 +69,11 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
         page: SettingsPages.NotificationPage,
         name: 'Notifications',
         icon: Icons.Bell,
+      },
+      {
+        page: SettingsPages.VoiceCallsPage,
+        name: 'Voice Calls',
+        icon: Icons.Mic,
       },
       {
         page: SettingsPages.DevicesPage,
@@ -218,6 +225,9 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
       )}
       {activePage === SettingsPages.NotificationPage && (
         <Notifications requestClose={handlePageRequestClose} />
+      )}
+      {activePage === SettingsPages.VoiceCallsPage && (
+        <VoiceCalls requestClose={handlePageRequestClose} />
       )}
       {activePage === SettingsPages.DevicesPage && (
         <Devices requestClose={handlePageRequestClose} />

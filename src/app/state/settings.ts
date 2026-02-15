@@ -77,7 +77,7 @@ const defaultSettings: Settings = {
 
   callMicNoiseGate: true,
   callMicNoiseGateThresholdDb: -45,
-  callParticipantVolumeBoost: 200,
+  callParticipantVolumeBoost: 300,
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',

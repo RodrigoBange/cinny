@@ -33,7 +33,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
     isChatOpen,
     isActiveCallReady,
     registerActiveClientWidgetApi,
-    activeClientWidget,
+    sendWidgetAction,
   } = useCallState();
   const mx = useMatrixClient();
   const clientConfig = useClientConfig();
@@ -95,20 +95,20 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
               customParams: callParams,
             }
           );
+          const nextUrl = newUrl.toString();
+          const currentUrl = iframeRef.current?.src;
+          const sameRoom = callSmallWidgetRef.current?.roomId === roomIdToSet;
 
-          if (
-            callSmallWidgetRef.current?.roomId &&
-            activeClientWidget?.roomId &&
-            activeClientWidget.roomId === callSmallWidgetRef.current?.roomId
-          ) {
+          if (sameRoom && currentUrl === nextUrl) {
             return;
           }
 
-          if (
-            iframeRef.current &&
-            (!iframeRef.current.src || iframeRef.current.src !== newUrl.toString())
-          ) {
-            iframeRef.current.src = newUrl.toString();
+          if (sameRoom) {
+            callSmallWidgetRef.current?.stopMessaging();
+          }
+
+          if (iframeRef.current && (!iframeRef.current.src || iframeRef.current.src !== nextUrl)) {
+            iframeRef.current.src = nextUrl;
           }
 
           const iframeElement = iframeRef.current;
@@ -150,9 +150,22 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
       clientConfig.elementCallUrl,
       callParams,
       registerActiveClientWidgetApi,
-      activeClientWidget,
     ]
   );
+
+  useEffect(() => {
+    if (!activeCallRoomId || !isActiveCallReady) return;
+    sendWidgetAction('io.element.audio_input_processing', {
+      audio_input_noise_gate: callMicNoiseGate,
+      audio_input_noise_gate_threshold_db: callMicNoiseGateThresholdDb,
+    }).catch(() => null);
+  }, [
+    activeCallRoomId,
+    isActiveCallReady,
+    callMicNoiseGate,
+    callMicNoiseGateThresholdDb,
+    sendWidgetAction,
+  ]);
 
   useEffect(() => {
     if (activeCallRoomId) {
